@@ -1,59 +1,67 @@
-/* Global Variables */
+// global variables
 const generateBtn = document.querySelector("#generate");
 const showResult = document.querySelector(".myInput");
 
-// Create a new date instance dynamically with JS
+// date
 let d = new Date();
 let date = d.getMonth() + 1 + "." + d.getDate() + "." + d.getFullYear();
 
-// const apiKey = "5bf80c52d7c3ac2bf878fb78f695b309";
-
-const showWeatherData = (apiKey, url) => {
+// client side and server side
+const showWeatherData = (apiKey) => {
   generateBtn.addEventListener("click", async () => {
-    const zipCode = document.querySelector("#zip").value;
-    const feelings = document.querySelector("#feelings").value;
-    console.log(zipCode);
-
     try {
-      const url = `https://api.openweathermap.org/data/2.5/weather?zip=${zipCode}&appid=${apiKey}&units=metric`;
+      const zipCode = document.querySelector("#zip").value;
+      const feelings = document.querySelector("#feelings").value;
+      const temp = fetchURL(apiKey, zipCode);
 
-      const res = await fetch(url);
-      console.log(res);
-      const data = await res.json();
-      const temp = data.main.temp;
-      console.log(temp);
-
-      const response = await fetch("/setWeatherData", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // Body data type must match "Content-Type" header
-        body: JSON.stringify({
-          date,
-          temp,
-          feelings,
-        }),
+      temp.then(async (tempData) => {
+        const response = await fetch("/setWeatherData", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            date,
+            tempData,
+            feelings,
+          }),
+        });
+        console.log("tempData: " + tempData);
+        bindHTMLView(tempData, feelings);
       });
-      const nodeRes = await fetch("/getWeatherData");
-      const finalData = await nodeRes.json();
-      console.log(finalData.date);
-      console.log(finalData.temp);
-      console.log(feelings);
-      const html = `<div id="entryHolder">
-                      <div id="date">${finalData.date}</div>
-                      <div id="temp">${finalData.temp} &#8451;</div>
-                      <div id="content">${feelings}</div>
-                    </div>`;
-      const entryHolder = document.getElementById("entryHolder");
-      entryHolder.insertAdjacentHTML("afterbegin", html);
     } catch (err) {
       console.log(err);
     }
   });
 };
-showWeatherData(
-  "5bf80c52d7c3ac2bf878fb78f695b309"
-  // `https://api.openweathermap.org/data/2.5/weather?zip=${zipCode}&appid=${apiKey}&units=metric`
-);
+
+// get weather data
+const fetchURL = async (apiKey, zipCode) => {
+  const url = `https://api.openweathermap.org/data/2.5/weather?zip=${zipCode}&appid=${apiKey}&units=metric`;
+  const res = await fetch(url);
+  console.log(res);
+  const data = await res.json();
+  const temp = data.main.temp;
+  console.log(temp);
+  return temp;
+};
+
+const getWeatherData = async (weatherPath) => {
+  const nodeRes = await fetch(weatherPath);
+  const finalData = await nodeRes.json();
+  return finalData;
+};
+
+// ui implement
+const bindHTMLView = (weatherData, feelings) => {
+  const html = `<div id="entryHolder">
+                      <div id="date">${date}</div>
+                      <div id="temp">${weatherData} &#8451;</div>
+                      <div id="content">${feelings}</div>
+                </div>`;
+  const entryHolder = document.getElementById("entryHolder");
+  entryHolder.insertAdjacentHTML("afterbegin", html);
+};
+
+showWeatherData("5bf80c52d7c3ac2bf878fb78f695b309");
